@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Физика движения — виртуальная лаборатория</title>
+
+<style>
+  :root{
+    --bg:#07111f;
+    --panel:rgba(15,30,52,.78);
+    --panel2:rgba(10,22,40,.92);
+    --text:#eef6ff;
+    --muted:#9fb3c9;
+    --cyan:#36d7ff;
+    --blue:#5d7cff;
+    --green:#43e6a1;
+    --danger:#ff6684;
+    --line:rgba(255,255,255,.10);
+    --shadow:0 22px 55px rgba(0,0,0,.32);
+  }
+
+  *{
+    box-sizing:border-box;
+  }
+
+  html{
+    scroll-behavior:smooth;
+  }
+
+  body{
+    margin:0;
+    color:var(--text);
+    background:
+      radial-gradient(circle at 10% 15%, rgba(54,215,255,.14), transparent 28%),
+      radial-gradient(circle at 90% 12%, rgba(93,124,255,.16), transparent 30%),
+      linear-gradient(145deg,#050c16 0%,#09172a 52%,#06111f 100%);
+    font-family:Arial, Helvetica, sans-serif;
+    min-height:100vh;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:36px 36px;
+  }
+
+  .container{
+    width:min(1180px,92%);
+    margin:0 auto;
+  }
+
+  header{
+    padding:24px 0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    font-size:20px;
+    font-weight:bold;
+  }
+
+  .logo{
+    width:45px;
+    height:45px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    color:#04101d;
+    font-size:24px;
+    box-shadow:0 12px 28px rgba(54,215,255,.25);
+  }
+
+  .brand span{
+    color:var(--cyan);
+  }
+
+  nav{
+    display:flex;
+    gap:10px;
+  }
+
+  nav a{
+    color:var(--muted);
+    text-decoration:none;
+    padding:10px 14px;
+    border-radius:12px;
+    transition:.25s;
+  }
+
+  nav a:hover{
+    color:white;
+    background:rgba(255,255,255,.07);
+  }
+
+  .hero{
+    min-height:620px;
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    align-items:center;
+    gap:40px;
+  }
+
+  .badge{
+    display:inline-block;
+    padding:9px 14px;
+    border-radius:100px;
+    background:rgba(54,215,255,.08);
+    border:1px solid rgba(54,215,255,.25);
+    color:#b9f3ff;
+    font-size:14px;
+    font-weight:bold;
+  }
+
+  h1{
+    font-size:clamp(44px,6vw,76px);
+    line-height:1;
+    margin:20px 0;
+    letter-spacing:-2px;
+  }
+
+  .gradient-text{
+    background:linear-gradient(90deg,#ffffff,#78e8ff,#8093ff);
+    -webkit-background-clip:text;
+    color:transparent;
+  }
+
+  .hero p{
+    color:var(--muted);
+    font-size:18px;
+    line-height:1.7;
+    max-width:650px;
+  }
+
+  .buttons{
+    display:flex;
+    gap:12px;
+    margin-top:26px;
+    flex-wrap:wrap;
+  }
+
+  button{
+    font:inherit;
+  }
+
+  .btn{
+    border:none;
+    padding:14px 20px;
+    border-radius:14px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.2s;
+  }
+
+  .btn:hover{
+    transform:translateY(-2px);
+  }
+
+  .btn-primary{
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    color:#06111f;
+  }
+
+  .btn-secondary{
+    background:rgba(255,255,255,.07);
+    color:white;
+    border:1px solid var(--line);
+  }
+
+  .hero-card{
+    position:relative;
+    height:330px;
+    border:1px solid var(--line);
+    border-radius:28px;
+    overflow:hidden;
+    background:rgba(255,255,255,.04);
+    box-shadow:var(--shadow);
+  }
+
+  .axis-x{
+    position:absolute;
+    top:50%;
+    left:5%;
+    width:90%;
+    height:1px;
+    background:rgba(255,255,255,.15);
+  }
+
+  .axis-y{
+    position:absolute;
+    left:50%;
+    top:5%;
+    height:90%;
+    width:1px;
+    background:rgba(255,255,255,.15);
+  }
+
+  .orbit{
+    width:220px;
+    height:220px;
+    border-radius:50%;
+    border:1px dashed rgba(255,255,255,.2);
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+  }
+
+  .ball{
+    position:absolute;
+    width:30px;
+    height:30px;
+    background:var(--cyan);
+    border-radius:50%;
+    box-shadow:0 0 30px var(--cyan);
+    left:50%;
+    top:50%;
+    margin-left:-15px;
+    margin-top:-125px;
+    transform-origin:15px 125px;
+    animation:rotateBall 6s linear infinite;
+  }
+
+  @keyframes rotateBall{
+    from{
+      transform:rotate(0deg);
+    }
+    to{
+      transform:rotate(360deg);
+    }
+  }
+
+  section{
+    padding:55px 0;
+  }
+
+  .section-title{
+    margin-bottom:28px;
+  }
+
+  .section-title h2{
+    font-size:34px;
+    margin:0 0 10px;
+  }
+
+  .section-title p{
+    color:var(--muted);
+    line-height:1.6;
+  }
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+  }
+
+  .card{
+    border:1px solid var(--line);
+    background:var(--panel);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:var(--shadow);
+    transition:.25s;
+  }
+
+  .card:hover{
+    transform:translateY(-5px);
+    border-color:rgba(54,215,255,.25);
+  }
+
+  .icon{
+    width:45px;
+    height:45px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    background:rgba(54,215,255,.1);
+    font-size:22px;
+  }
+
+  .card h3{
+    margin:16px 0 10px;
+  }
+
+  .card p{
+    color:var(--muted);
+    line-height:1.6;
+  }
+
+  .formula{
+    margin-top:18px;
+    padding:14px;
+    border-radius:14px;
+    background:rgba(54,215,255,.06);
+    border:1px solid rgba(54,215,255,.15);
+    color:#caf3ff;
+    font-family:monospace;
+  }
+
+  .lab{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:20px;
+  }
+
+  .controls{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+  }
+
+  .group{
+    padding:17px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+  }
+
+  label{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    margin-bottom:12px;
+    font-weight:bold;
+  }
+
+  .value{
+    color:var(--cyan);
+  }
+
+  select{
+    width:100%;
+    background:#0d1c31;
+    color:white;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--line);
+  }
+
+  input[type="range"]{
+    width:100%;
+    accent-color:var(--cyan);
+  }
+
+  .control-buttons{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  .simulation{
+    padding:15px;
+    border-radius:24px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  canvas{
+    display:block;
+    width:100%;
+    height:430px;
+    border-radius:18px;
+    background:#071322;
+  }
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-top:12px;
+  }
+
+  .stat{
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px;
+    background:rgba(255,255,255,.035);
+    color:var(--muted);
+    font-size:12px;
+  }
+
+  .stat strong{
+    color:white;
+    display:block;
+    font-size:18px;
+    margin-top:4px;
+  }
+
+  .quiz{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+
+  .answer{
+    padding:15px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.04);
+    cursor:pointer;
+    transition:.2s;
+  }
+
+  .answer:hover{
+    background:rgba(255,255,255,.08);
+  }
+
+  .answer.correct{
+    background:rgba(67,230,161,.12);
+    border-color:var(--green);
+  }
+
+  .answer.wrong{
+    background:rgba(255,102,132,.12);
+    border-color:var(--danger);
+  }
+
+  #quizResult{
+    color:var(--muted);
+    margin-top:18px;
+  }
+
+  footer{
+    text-align:center;
+    color:var(--muted);
+    padding:35px 0;
+  }
+
+  @media(max-width:900px){
+    .hero{
+      grid-template-columns:1fr;
+      padding:40px 0;
+    }
+
+    .lab{
+      grid-template-columns:1fr;
+    }
+
+    .cards{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media(max-width:600px){
+    nav{
+      display:none;
+    }
+
+    .hero{
+      min-height:auto;
+    }
+
+    h1{
+      font-size:45px;
+    }
+
+    .stats{
+      grid-template-columns:1fr 1fr;
+    }
+
+    .quiz{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+  <div class="brand">
+    <div class="logo">↗</div>
+    MotionLab <span>Physics</span>
+  </div>
+
+  <nav>
+    <a href="#theory">Теория</a>
+    <a href="#lab">Симуляция</a>
+    <a href="#quiz">Тест</a>
+  </nav>
+</header>
+
+<main>
+
+<section class="hero">
+
+  <div>
+    <div class="badge">● Виртуальная лаборатория по физике</div>
+
+    <h1>
+      <span class="gradient-text">
+        Изучение движения
+      </span>
+      <br>
+      и его видов
+    </h1>
+
+    <p>
+      Изучайте механическое движение на практике.
+      Изменяйте скорость и ускорение,
+      наблюдайте траекторию объекта
+      и сравнивайте разные виды движения.
+    </p>
+
+    <div class="buttons">
+
+      <button
+        class="btn btn-primary"
+        onclick="document.querySelector('#lab').scrollIntoView()">
+        Запустить симуляцию
+      </button>
+
+      <button
+        class="btn btn-secondary"
+        onclick="document.querySelector('#theory').scrollIntoView()">
+        Изучить теорию
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="hero-card">
+
+    <div class="axis-x"></div>
+    <div class="axis-y"></div>
+
+    <div class="orbit"></div>
+    <div class="ball"></div>
+
+  </div>
+
+</section>
+
+
+<section id="theory">
+
+  <div class="section-title">
+
+    <h2>Основные виды движения</h2>
+
+    <p>
+      Механическое движение — это изменение положения
+      тела относительно других тел с течением времени.
+    </p>
+
+  </div>
+
+  <div class="cards">
+
+    <div class="card">
+
+      <div class="icon">→</div>
+
+      <h3>Равномерное движение</h3>
+
+      <p>
+        Тело за равные промежутки времени
+        проходит одинаковые расстояния.
+        Скорость остаётся постоянной.
+      </p>
+
+      <div class="formula">
+        x = x₀ + vt
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="icon">⇈</div>
+
+      <h3>Равноускоренное движение</h3>
+
+      <p>
+        Скорость тела изменяется на одинаковую величину
+        за равные промежутки времени.
+      </p>
+
+      <div class="formula">
+        x = x₀ + v₀t + at² / 2
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="icon">⟳</div>
+
+      <h3>Движение по окружности</h3>
+
+      <p>
+        Тело движется по круговой траектории.
+        Направление скорости постоянно изменяется.
+      </p>
+
+      <div class="formula">
+        v = ωR
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<section id="lab">
+
+<div class="section-title">
+
+  <h2>Интерактивная симуляция</h2>
+
+  <p>
+    Выберите вид движения и изменяйте параметры эксперимента.
+  </p>
+
+</div>
+
+
+<div class="lab">
+
+<div class="controls">
+
+<div class="group">
+
+<label>
+Вид движения
+</label>
+
+<select id="mode">
+
+<option value="uniform">
+Равномерное прямолинейное
+</option>
+
+<option value="accelerated">
+Равноускоренное
+</option>
+
+<option value="circular">
+Движение по окружности
+</option>
+
+</select>
+
+</div>
+
+
+<div class="group">
+
+<label>
+
+Начальная скорость
+
+<span
+class="value"
+id="vValue">
+4 м/с
+</span>
+
+</label>
+
+<input
+id="velocity"
+type="range"
+min="1"
+max="10"
+value="4"
+step="0.5">
+
+</div>
+
+
+<div
+class="group"
+id="accelerationGroup">
+
+<label>
+
+Ускорение
+
+<span
+class="value"
+id="aValue">
+1 м/с²
+</span>
+
+</label>
+
+<input
+id="acceleration"
+type="range"
+min="-3"
+max="3"
+value="1"
+step="0.25">
+
+</div>
+
+
+<div
+class="group"
+id="radiusGroup"
+style="display:none">
+
+<label>
+
+Радиус
+
+<span
+class="value"
+id="radiusValue">
+120 px
+</span>
+
+</label>
+
+<input
+id="radius"
+type="range"
+min="60"
+max="170"
+value="120">
+
+</div>
+
+
+<div class="control-buttons">
+
+<button
+class="btn btn-primary"
+id="startButton">
+
+▶ Старт
+
+</button>
+
+
+<button
+class="btn btn-secondary"
+id="resetButton">
+
+↺ Сброс
+
+</button>
+
+</div>
+
+</div>
+
+
+<div class="simulation">
+
+<canvas
+id="canvas"
+width="820"
+height="430">
+</canvas>
+
+
+<div class="stats">
+
+<div class="stat">
+
+Время
+
+<strong id="time">
+0.00 с
+</strong>
+
+</div>
+
+
+<div class="stat">
+
+Скорость
+
+<strong id="speed">
+4.00 м/с
+</strong>
+
+</div>
+
+
+<div class="stat">
+
+Ускорение
+
+<strong id="accelerationOut">
+0 м/с²
+</strong>
+
+</div>
+
+
+<div class="stat">
+
+Путь
+
+<strong id="distance">
+0.00 м
+</strong>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section id="quiz">
+
+<div class="section-title">
+
+<h2>Проверь свои знания</h2>
+
+<p>
+Ответьте на небольшой вопрос.
+</p>
+
+</div>
+
+
+<div class="card">
+
+<h3>
+Какое утверждение верно для равномерного прямолинейного движения?
+</h3>
+
+
+<div class="quiz">
+
+<div class="answer" data-correct="false">
+Скорость постоянно увеличивается
+</div>
+
+<div class="answer" data-correct="true">
+Скорость постоянна, ускорение равно нулю
+</div>
+
+<div class="answer" data-correct="false">
+Тело обязательно движется по окружности
+</div>
+
+<div class="answer" data-correct="false">
+Ускорение всегда направлено вверх
+</div>
+
+</div>
+
+
+<div id="quizResult"></div>
+
+</div>
+
+</section>
+
+</main>
+
+
+<footer>
+
+Учебный проект MotionLab Physics •
+Виртуальное исследование механического движения
+
+</footer>
+
+</div>
+
+
+<script>
+
+const canvas = document.getElementById("canvas");
+
+const ctx = canvas.getContext("2d");
+
+const mode =
+document.getElementById("mode");
+
+const velocity =
+document.getElementById("velocity");
+
+const acceleration =
+document.getElementById("acceleration");
+
+const radius =
+document.getElementById("radius");
+
+
+const vValue =
+document.getElementById("vValue");
+
+const aValue =
+document.getElementById("aValue");
+
+const radiusValue =
+document.getElementById("radiusValue");
+
+
+const timeText =
+document.getElementById("time");
+
+const speedText =
+document.getElementById("speed");
+
+const accelerationText =
+document.getElementById("accelerationOut");
+
+const distanceText =
+document.getElementById("distance");
+
+
+const startButton =
+document.getElementById("startButton");
+
+const resetButton =
+document.getElementById("resetButton");
+
+
+let running = false;
+
+let elapsed = 0;
+
+let lastTime = 0;
+
+let distance = 0;
+
+
+let x = 80;
+
+let y = 215;
+
+let angle = 0;
+
+
+let oldX = x;
+
+let oldY = y;
+
+
+let trail = [];
+
+
+function drawGrid(){
+
+ctx.clearRect(
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+
+ctx.strokeStyle =
+"rgba(255,255,255,0.07)";
+
+
+ctx.lineWidth = 1;
+
+
+for(let x = 0; x < canvas.width; x += 40){
+
+ctx.beginPath();
+
+ctx.moveTo(x,0);
+
+ctx.lineTo(
+x,
+canvas.height
+);
+
+ctx.stroke();
+
+}
+
+
+for(let y = 0; y < canvas.height; y += 40){
+
+ctx.beginPath();
+
+ctx.moveTo(0,y);
+
+ctx.lineTo(
+canvas.width,
+y
+);
+
+ctx.stroke();
+
+}
+
+
+ctx.strokeStyle =
+"rgba(255,255,255,0.2)";
+
+
+ctx.beginPath();
+
+ctx.moveTo(
+30,
+215
+);
+
+ctx.lineTo(
+790,
+215
+);
+
+ctx.stroke();
+
+}
+
+
+function draw(){
+
+drawGrid();
+
+
+if(
+mode.value === "circular"
+){
+
+ctx.strokeStyle =
+"rgba(54,215,255,0.25)";
+
+ctx.lineWidth = 2;
+
+ctx.setLineDash([7,8]);
+
+ctx.beginPath();
+
+ctx.arc(
+410,
+215,
+Number(radius.value),
+0,
+Math.PI * 2
+);
+
+ctx.stroke();
+
+ctx.setLineDash([]);
+
+}
+
+
+if(
+trail.length > 1
+){
+
+ctx.strokeStyle =
+"rgba(54,215,255,0.65)";
+
+ctx.lineWidth = 3;
+
+ctx.beginPath();
+
+ctx.moveTo(
+trail[0].x,
+trail[0].y
+);
+
+
+trail.forEach(
+point => {
+
+ctx.lineTo(
+point.x,
+point.y
+);
+
+}
+);
+
+
+ctx.stroke();
+
+}
+
+
+const glow =
+ctx.createRadialGradient(
+x,
+y,
+2,
+x,
+y,
+30
+);
+
+
+glow.addColorStop(
+0,
+"rgba(54,215,255,0.7)"
+);
+
+
+glow.addColorStop(
+1,
+"rgba(54,215,255,0)"
+);
+
+
+ctx.fillStyle = glow;
+
+ctx.beginPath();
+
+ctx.arc(
+x,
+y,
+30,
+0,
+Math.PI * 2
+);
+
+ctx.fill();
+
+
+ctx.fillStyle =
+"#36d7ff";
+
+
+ctx.beginPath();
+
+ctx.arc(
+x,
+y,
+10,
+0,
+Math.PI * 2
+);
+
+ctx.fill();
+
+
+ctx.fillStyle =
+"white";
+
+
+ctx.font =
+"600 13px Arial";
+
+
+ctx.fillText(
+"Объект",
+x + 16,
+y - 14
+);
+
+}
+
+
+function updateStats(
+time,
+speed,
+acc,
+dist
+){
+
+timeText.textContent =
+time.toFixed(2) + " с";
+
+
+speedText.textContent =
+Math.abs(speed).toFixed(2) + " м/с";
+
+
+accelerationText.textContent =
+acc.toFixed(2) + " м/с²";
+
+
+distanceText.textContent =
+dist.toFixed(2) + " м";
+
+}
+
+
+function simulation(timestamp){
+
+if(!running){
+return;
+}
+
+
+if(!lastTime){
+
+lastTime = timestamp;
+
+}
+
+
+const dt = Math.min(
+(timestamp - lastTime) / 1000,
+0.035
+);
+
+
+lastTime = timestamp;
+
+elapsed += dt;
+
+
+let speed =
+Number(velocity.value);
+
+
+let acc = 0;
+
+
+if(
+mode.value === "uniform"
+){
+
+x +=
+speed * 22 * dt;
+
+
+if(x > 790){
+
+x = 30;
+
+trail = [];
+
+}
+
+}
+
+
+else if(
+mode.value === "accelerated"
+){
+
+acc =
+Number(acceleration.value);
+
+
+speed =
+Number(velocity.value)
++
+acc * elapsed;
+
+
+x +=
+speed * 22 * dt;
+
+
+if(
+x > 790
+||
+x < 30
+){
+
+elapsed = 0;
+
+x = 80;
+
+trail = [];
+
+}
+
+}
+
+
+else if(
+mode.value === "circular"
+){
+
+const r =
+Number(radius.value);
+
+
+const angularVelocity =
+(speed * 9) / r;
+
+
+angle +=
+angularVelocity * dt;
+
+
+x =
+410
++
+Math.cos(angle) * r;
+
+
+y =
+215
++
+Math.sin(angle) * r;
+
+
+acc =
+(speed * speed)
+/
+(r / 22);
+
+}
+
+
+const dx =
+x - oldX;
+
+
+const dy =
+y - oldY;
+
+
+distance +=
+Math.sqrt(
+dx * dx
++
+dy * dy
+)
+/ 22;
+
+
+oldX = x;
+
+oldY = y;
+
+
+trail.push({
+x:x,
+y:y
+});
+
+
+if(
+trail.length > 300
+){
+
+trail.shift();
+
+}
+
+
+updateStats(
+elapsed,
+speed,
+acc,
+distance
+);
+
+
+draw();
+
+
+requestAnimationFrame(
+simulation
+);
+
+}
+
+
+function resetSimulation(){
+
+running = false;
+
+startButton.textContent =
+"▶ Старт";
+
+
+elapsed = 0;
+
+lastTime = 0;
+
+distance = 0;
+
+trail = [];
+
+
+x = 80;
+
+y = 215;
+
+angle = 0;
+
+
+oldX = x;
+
+oldY = y;
+
+
+updateStats(
+0,
+Number(velocity.value),
+0,
+0
+);
+
+
+draw();
+
+}
+
+
+startButton.addEventListener(
+"click",
+function(){
+
+running =
+!running;
+
+
+if(running){
+
+startButton.textContent =
+"❚❚ Пауза";
+
+
+lastTime = 0;
+
+
+requestAnimationFrame(
+simulation
+);
+
+}
+
+else{
+
+startButton.textContent =
+"▶ Старт";
+
+}
+
+}
+);
+
+
+resetButton.addEventListener(
+"click",
+resetSimulation
+);
+
+
+velocity.addEventListener(
+"input",
+function(){
+
+vValue.textContent =
+Number(velocity.value)
+.toFixed(1)
++
+" м/с";
+
+}
+);
+
+
+acceleration.addEventListener(
+"input",
+function(){
+
+aValue.textContent =
+Number(acceleration.value)
+.toFixed(2)
++
+" м/с²";
+
+}
+);
+
+
+radius.addEventListener(
+"input",
+function(){
+
+radiusValue.textContent =
+radius.value
++
+" px";
+
+draw();
+
+}
+);
+
+
+mode.addEventListener(
+"change",
+function(){
+
+document
+.getElementById(
+"accelerationGroup"
+)
+.style.display =
+mode.value === "accelerated"
+?
+"block"
+:
+"none";
+
+
+document
+.getElementById(
+"radiusGroup"
+)
+.style.display =
+mode.value === "circular"
+?
+"block"
+:
+"none";
+
+
+resetSimulation();
+
+}
+);
+
+
+document
+.querySelectorAll(
+".answer"
+)
+.forEach(
+answer => {
+
+answer.addEventListener(
+"click",
+function(){
+
+document
+.querySelectorAll(
+".answer"
+)
+.forEach(
+element => {
+
+element.classList.remove(
+"correct",
+"wrong"
+);
+
+}
+);
+
+
+if(
+answer.dataset.correct
+===
+"true"
+){
+
+answer.classList.add(
+"correct"
+);
+
+
+document
+.getElementById(
+"quizResult"
+)
+.textContent =
+"Правильно! При равномерном прямолинейном движении скорость постоянна, а ускорение равно нулю.";
+
+}
+
+else{
+
+answer.classList.add(
+"wrong"
+);
+
+
+document
+.getElementById(
+"quizResult"
+)
+.textContent =
+"Неверно. Попробуйте выбрать другой вариант.";
+
+}
+
+}
+);
+
+}
+);
+
+
+resetSimulation();
+
+</script>
+
+</body>
+</html>
